@@ -15,11 +15,15 @@ type Topic struct {
 
 func (topic *Topic) SendMessage(message interface{}) error {
 
+	data, err := json.Marshal(message)
+	if err != nil {
+		return err
+	}
 	sendMsg := Message{
 		Topic:   topic.topic,
-		Message: message,
+		Message: string(data),
 	}
-	data, err := json.Marshal(sendMsg)
+	data, err = json.Marshal(sendMsg)
 	if err != nil {
 		return err
 	}
