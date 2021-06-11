@@ -29,7 +29,7 @@ func (hub *Hub) getTopic(topic string) *Topic {
 	return topicHub
 }
 
-func (hub *Hub) broadcast(topic string, message []byte) {
+func (hub *Hub) broadcast(topic string, message interface{}) {
 
 	if topicHub, ok := hub.topics[topic]; ok {
 
@@ -46,20 +46,20 @@ func (hub *Hub) run() {
 		if err != nil {
 			// handle error
 		}
-		var raw map[string]interface{}
+		raw := &Message{}
 
-		json.Unmarshal(message, &raw)
+		err = json.Unmarshal(message, &raw)
+		if err == nil {
 
-		if element, ok := raw["topic"]; ok {
-
-			topicString := element.(string)
+			topicString := raw.Topic
 			topics := strings.Split(topicString, ",")
 			for _, topic := range topics {
 				topic = strings.TrimSpace(topic)
 				if len(topic) > 0 {
-					hub.broadcast(topic, message)
+					hub.broadcast(topic, raw.Message)
 				}
 			}
+
 		}
 	}
 }
