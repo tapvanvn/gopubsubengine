@@ -1,6 +1,6 @@
 package gopubsubengine
 
 type Hub interface {
-	SubscribeOn(topicPath string) (Subscriber, error)
-	PublishOn(topicPath string) (Publisher, error)
+	SubscribeOn(topic string) (Subscriber, error)
+	PublishOn(topic string) (Publisher, error)
 }

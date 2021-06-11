@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/gorilla/websocket"
+	"github.com/tapvanvn/gopubsubengine"
 )
 
 //TODO: when disconnect
@@ -89,7 +90,7 @@ func (hub *Hub) run() {
 	}
 }
 
-func (hub *Hub) SubscribeOn(topic string) (*Subscriber, error) {
+func (hub *Hub) SubscribeOn(topic string) (gopubsubengine.Subscriber, error) {
 
 	topicHub := hub.getTopic(topic)
 
@@ -123,7 +124,7 @@ func (hub *Hub) SubscribeOn(topic string) (*Subscriber, error) {
 	return subscriber, nil
 }
 
-func (hub *Hub) PublishOn(topic string) (*Publisher, error) {
+func (hub *Hub) PublishOn(topic string) (gopubsubengine.Publisher, error) {
 	topicHub := hub.getTopic(topic)
 
 	publisher := &Publisher{
