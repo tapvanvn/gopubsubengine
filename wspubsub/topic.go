@@ -2,8 +2,6 @@ package wspubsub
 
 import (
 	"encoding/json"
-
-	"github.com/gorilla/websocket"
 )
 
 type Topic struct {
@@ -23,13 +21,6 @@ func (topic *Topic) SendMessage(message interface{}) error {
 		Topic:   topic.topic,
 		Message: string(data),
 	}
-	data, err = json.Marshal(sendMsg)
-	if err != nil {
-		return err
-	}
-	err = topic.hub.conn.WriteMessage(websocket.TextMessage, data)
-	if err != nil {
-		return err
-	}
-	return nil
+	return topic.hub.Send(&sendMsg)
+
 }

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/gorilla/websocket"
 	"github.com/tapvanvn/gopubsubengine"
@@ -13,6 +14,7 @@ import (
 //TODO: handle close
 
 type Hub struct {
+	mux             sync.Mutex
 	topics          map[string]*Topic
 	url             string
 	conn            *websocket.Conn
@@ -160,14 +162,20 @@ func (hub *Hub) PublishOn(topic string) (gopubsubengine.Publisher, error) {
 	return publisher, nil
 }
 
-func (hub *Hub) SendControl(register *Register) {
+func (hub *Hub) SendControl(register *Register) error {
 	data, err := json.Marshal(register)
 	if err != nil {
-		return
+		return err
 	}
 	msg := &Message{
 		Topic:   "control",
 		Message: string(data),
 	}
-	hub.conn.WriteJSON(msg)
+	return hub.Send(msg)
+}
+
+func (hub *Hub) Send(message *Message) error {
+	hub.mux.Lock()
+	defer hub.mux.Unlock()
+	return hub.conn.WriteJSON(message)
 }
