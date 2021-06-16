@@ -29,13 +29,6 @@ func NewWSPubSubHub(url string) (*Hub, error) {
 		publishTopics:   map[string]int{},
 		subscribeTopics: map[string]int{},
 	}
-	fmt.Println(url)
-	c, _, err := websocket.DefaultDialer.Dial(hub.url, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	hub.conn = c
 
 	go hub.run()
 
@@ -68,6 +61,16 @@ func (hub *Hub) broadcast(topic string, message interface{}) {
 	}
 }
 func (hub *Hub) run() {
+
+	c, _, err := websocket.DefaultDialer.Dial(hub.url, nil)
+	if err != nil {
+
+		fmt.Println(err)
+		return
+	}
+
+	hub.conn = c
+
 	for {
 		_, message, err := hub.conn.ReadMessage()
 		fmt.Println("receive:", message)
