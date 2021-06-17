@@ -49,7 +49,7 @@ func (hub *Hub) getTopic(topic string) *Topic {
 	return topicHub
 }
 
-func (hub *Hub) broadcast(topic string, message interface{}) {
+func (hub *Hub) broadcast(topic string, message string) {
 
 	if topicHub, ok := hub.topics[topic]; ok {
 

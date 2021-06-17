@@ -4,7 +4,7 @@ import "github.com/tapvanvn/gopubsubengine"
 
 type Subscriber struct {
 	topic     *Topic
-	processor func(message interface{})
+	processor func(message string)
 }
 
 func (sub *Subscriber) Unsubscribe() {

@@ -33,7 +33,7 @@ func TestHub(t *testing.T) {
 		t.Fatal(err)
 		return
 	}
-	subscriber.SetProcessor(func(message interface{}) {
+	subscriber.SetProcessor(func(message string) {
 		fmt.Println("receive:", message)
 	})
 

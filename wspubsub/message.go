@@ -1,6 +1,6 @@
 package wspubsub
 
 type Message struct {
-	Topic   string      `json:"topic"`
-	Message interface{} `json:"message"`
+	Topic   string `json:"topic"`
+	Message string `json:"message"`
 }

@@ -1,6 +1,6 @@
 package gopubsubengine
 
-type MessageProcessor func(message interface{})
+type MessageProcessor func(message string)
 
 type Subscriber interface {
 	Unsubscribe()
