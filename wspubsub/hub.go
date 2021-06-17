@@ -73,7 +73,7 @@ func (hub *Hub) run() {
 
 	for {
 		_, message, err := hub.conn.ReadMessage()
-		fmt.Println("receive:", message)
+		//fmt.Println("receive:", message)
 		if err != nil {
 			// handle error
 			fmt.Println("error:", err)
