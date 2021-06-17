@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-	"sync"
 
 	"github.com/gorilla/websocket"
 	"github.com/tapvanvn/gopubsubengine"
@@ -14,12 +13,12 @@ import (
 //TODO: handle close
 
 type Hub struct {
-	mux             sync.Mutex
 	topics          map[string]*Topic
 	url             string
 	conn            *websocket.Conn
 	publishTopics   map[string]int
 	subscribeTopics map[string]int
+	messages        chan *Message
 }
 
 func NewWSPubSubHub(url string) (*Hub, error) {
@@ -28,6 +27,7 @@ func NewWSPubSubHub(url string) (*Hub, error) {
 		topics:          map[string]*Topic{},
 		publishTopics:   map[string]int{},
 		subscribeTopics: map[string]int{},
+		messages:        make(chan *Message),
 	}
 
 	go hub.run()
@@ -60,6 +60,15 @@ func (hub *Hub) broadcast(topic string, message string) {
 		}
 	}
 }
+func (hub *Hub) runWriter() {
+	for {
+		msg := <-hub.messages
+		err := hub.conn.WriteJSON(msg)
+		if err != nil {
+			fmt.Println(err)
+		}
+	}
+}
 func (hub *Hub) run() {
 
 	c, _, err := websocket.DefaultDialer.Dial(hub.url, nil)
@@ -70,7 +79,7 @@ func (hub *Hub) run() {
 	}
 
 	hub.conn = c
-
+	go hub.runWriter()
 	for {
 		_, message, err := hub.conn.ReadMessage()
 		//fmt.Println("receive:", message)
@@ -178,7 +187,8 @@ func (hub *Hub) SendControl(register *Register) error {
 }
 
 func (hub *Hub) Send(message *Message) error {
-	hub.mux.Lock()
-	defer hub.mux.Unlock()
-	return hub.conn.WriteJSON(message)
+	hub.messages <- message
+	return nil
+
+	//return hub.conn.WriteJSON(message)
 }
