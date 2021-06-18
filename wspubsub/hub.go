@@ -3,6 +3,7 @@ package wspubsub
 import (
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"strings"
 
 	"github.com/gorilla/websocket"
@@ -60,6 +61,15 @@ func (hub *Hub) broadcast(topic string, message string) {
 		}
 	}
 }
+func (hub *Hub) pickOne(topic string, message string) {
+
+	if topicHub, ok := hub.topics[topic]; ok {
+
+		pick := rand.Intn(len(topicHub.subscribers))
+		subscriber := topicHub.subscribers[pick]
+		go subscriber.processor(message)
+	}
+}
 func (hub *Hub) runWriter() {
 	for {
 		msg := <-hub.messages
@@ -91,13 +101,24 @@ func (hub *Hub) run() {
 
 		err = json.Unmarshal(message, &raw)
 		if err == nil {
-
-			topicString := raw.Topic
-			topics := strings.Split(topicString, ",")
-			for _, topic := range topics {
-				topic = strings.TrimSpace(topic)
-				if len(topic) > 0 {
-					hub.broadcast(topic, raw.Message)
+			msgType, ok := raw.Attributes["type"]
+			if !ok || msgType != "pick_one" {
+				topicString := raw.Topic
+				topics := strings.Split(topicString, ",")
+				for _, topic := range topics {
+					topic = strings.TrimSpace(topic)
+					if len(topic) > 0 {
+						hub.broadcast(topic, raw.Message)
+					}
+				}
+			} else {
+				topicString := raw.Topic
+				topics := strings.Split(topicString, ",")
+				for _, topic := range topics {
+					topic = strings.TrimSpace(topic)
+					if len(topic) > 0 {
+						hub.pickOne(topic, raw.Message)
+					}
 				}
 			}
 		}
