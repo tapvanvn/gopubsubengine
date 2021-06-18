@@ -11,3 +11,6 @@ func (publisher *Publisher) Publish(message interface{}) {
 
 	publisher.topic.SendMessage(message)
 }
+func (publisher *Publisher) PublishAttributes(message interface{}, attributes map[string]string) {
+	publisher.topic.SendMessageAttributes(message, attributes)
+}
