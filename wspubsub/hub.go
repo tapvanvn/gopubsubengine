@@ -93,7 +93,7 @@ func (hub *Hub) run() {
 	go hub.runWriter()
 	for {
 		_, message, err := hub.conn.ReadMessage()
-		//fmt.Println("receive:", message)
+		fmt.Println("receive:", message)
 		if err != nil {
 			// handle error
 			fmt.Println("error:", err)
@@ -122,6 +122,8 @@ func (hub *Hub) run() {
 					}
 				}
 			}
+		} else {
+			fmt.Println(err)
 		}
 	}
 }
@@ -212,5 +214,4 @@ func (hub *Hub) Send(message *Message) error {
 	hub.messages <- message
 	return nil
 
-	//return hub.conn.WriteJSON(message)
 }
