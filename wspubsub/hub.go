@@ -92,15 +92,9 @@ func (hub *Hub) run() {
 	hub.conn = c
 	go hub.runWriter()
 	for {
-		_, message, err := hub.conn.ReadMessage()
-		fmt.Println("receive:", string(message), "end")
-		if err != nil {
-			// handle error
-			fmt.Println("error:", err)
-		}
 		raw := &Message{}
+		err := hub.conn.ReadJSON(raw)
 
-		err = json.Unmarshal(message, &raw)
 		if err == nil {
 			msgType, ok := raw.Attributes["type"]
 			if !ok || msgType != "pick_one" {
