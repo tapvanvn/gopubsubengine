@@ -62,11 +62,11 @@ func (hub *Hub) broadcast(topic string, message string) {
 	}
 }
 func (hub *Hub) pickOne(topic string, message string) {
-	fmt.Println("pick one", message)
+
 	if topicHub, ok := hub.topics[topic]; ok {
 
 		pick := rand.Intn(len(topicHub.subscribers))
-		fmt.Println("choice", pick)
+		fmt.Println("pick", pick, len(topicHub.subscribers))
 		subscriber := topicHub.subscribers[pick]
 		go subscriber.processor(message)
 	}
@@ -117,7 +117,7 @@ func (hub *Hub) run() {
 				}
 			}
 		} else {
-			fmt.Println("err1", err)
+			fmt.Println("receive json fail:", err)
 		}
 	}
 }
