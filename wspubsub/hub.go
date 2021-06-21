@@ -123,7 +123,7 @@ func (hub *Hub) run() {
 				}
 			}
 		} else {
-			fmt.Println(err)
+			fmt.Println("err1", err)
 		}
 	}
 }
