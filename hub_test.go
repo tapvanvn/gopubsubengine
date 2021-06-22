@@ -11,7 +11,7 @@ import (
 
 func TestHub(t *testing.T) {
 	var publisher gopubsubengine.Publisher = nil
-	hub, err := wspubsub.NewWSPubSubHub("ws://192.168.1.8:80/ws")
+	hub, err := wspubsub.NewWSPubSubHub("ws://192.168.1.3:80/ws")
 	if err != nil {
 		t.Fatal(err)
 		return
@@ -22,7 +22,7 @@ func TestHub(t *testing.T) {
 		return
 	}
 
-	hub2, err := wspubsub.NewWSPubSubHub("ws://192.168.1.8:80/ws")
+	hub2, err := wspubsub.NewWSPubSubHub("ws://192.168.1.3:80/ws")
 	if err != nil {
 		t.Fatal(err)
 		return

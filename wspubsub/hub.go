@@ -13,8 +13,12 @@ import (
 
 //TODO: when disconnect
 //TODO: handle close
+const (
+	CtlReConnect = iota
+)
 
 type Hub struct {
+	//ctlmx           sync.Mutex
 	topics          map[string]*Topic
 	url             string
 	conn            *websocket.Conn
@@ -25,16 +29,18 @@ type Hub struct {
 }
 
 func NewWSPubSubHub(url string) (*Hub, error) {
+
 	hub := &Hub{
 		url:             url,
 		conn:            nil,
 		topics:          map[string]*Topic{},
 		publishTopics:   map[string]int{},
 		subscribeTopics: map[string]int{},
-		messages:        make(chan *Message),
-		control:         make(chan int),
+		messages:        make(chan *Message, 100),
+		control:         make(chan int, 1),
 	}
-	hub.control <- 1
+	hub.control <- CtlReConnect
+
 	go hub.run()
 
 	return hub, nil
@@ -77,16 +83,24 @@ func (hub *Hub) pickOne(topic string, message string) {
 }
 func (hub *Hub) runWriter() {
 	for {
+
 		msg := <-hub.messages
-		err := hub.conn.WriteJSON(msg)
-		if err != nil {
-			fmt.Println(err)
+		if hub.conn != nil {
+			//hub.ctlmx.Lock()
+			err := hub.conn.WriteJSON(msg)
+			if err != nil {
+				fmt.Println(err)
+			}
+			//hub.ctlmx.Unlock()
+		} else {
+			hub.messages <- msg
 		}
 	}
 }
 func (hub *Hub) handleClose(code int, text string) error {
+
 	hub.conn = nil
-	hub.control <- 1
+	hub.control <- CtlReConnect
 	return nil
 }
 func (hub *Hub) run() {
@@ -95,16 +109,19 @@ func (hub *Hub) run() {
 	for {
 		select {
 		case ctl := <-hub.control:
-			if ctl == 1 {
+			if ctl == CtlReConnect {
+
 				c, _, err := websocket.DefaultDialer.Dial(hub.url, nil)
 				if err != nil {
 
-					hub.control <- 1
+					hub.control <- CtlReConnect
 					time.Sleep(time.Second * 2)
-					return
+
+					break
 				}
 
 				hub.conn = c
+
 				hub.conn.SetCloseHandler(hub.handleClose)
 				//resend current pubsub topics
 				for topic, _ := range hub.publishTopics {
@@ -153,7 +170,10 @@ func (hub *Hub) run() {
 						}
 					}
 				} else {
+
 					fmt.Println("receive json fail:", err)
+					hub.control <- CtlReConnect
+					hub.conn = nil
 				}
 			}
 		}
