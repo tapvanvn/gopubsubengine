@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/rand"
 	"strings"
+	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/tapvanvn/gopubsubengine"
@@ -20,17 +21,20 @@ type Hub struct {
 	publishTopics   map[string]int
 	subscribeTopics map[string]int
 	messages        chan *Message
+	control         chan int
 }
 
 func NewWSPubSubHub(url string) (*Hub, error) {
 	hub := &Hub{
 		url:             url,
+		conn:            nil,
 		topics:          map[string]*Topic{},
 		publishTopics:   map[string]int{},
 		subscribeTopics: map[string]int{},
 		messages:        make(chan *Message),
+		control:         make(chan int),
 	}
-
+	hub.control <- 1
 	go hub.run()
 
 	return hub, nil
@@ -80,44 +84,78 @@ func (hub *Hub) runWriter() {
 		}
 	}
 }
+func (hub *Hub) handleClose(code int, text string) error {
+	hub.conn = nil
+	hub.control <- 1
+	return nil
+}
 func (hub *Hub) run() {
 
-	c, _, err := websocket.DefaultDialer.Dial(hub.url, nil)
-	if err != nil {
-
-		fmt.Println(err)
-		return
-	}
-
-	hub.conn = c
 	go hub.runWriter()
 	for {
-		raw := &Message{}
-		err := hub.conn.ReadJSON(raw)
+		select {
+		case ctl := <-hub.control:
+			if ctl == 1 {
+				c, _, err := websocket.DefaultDialer.Dial(hub.url, nil)
+				if err != nil {
 
-		if err == nil {
-			msgType, ok := raw.Attributes["type"]
-			if !ok || msgType != "pick_one" {
-				topicString := raw.Topic
-				topics := strings.Split(topicString, ",")
-				for _, topic := range topics {
-					topic = strings.TrimSpace(topic)
-					if len(topic) > 0 {
-						hub.broadcast(topic, raw.Message)
-					}
+					hub.control <- 1
+					time.Sleep(time.Second * 2)
+					return
 				}
-			} else {
-				topicString := raw.Topic
-				topics := strings.Split(topicString, ",")
-				for _, topic := range topics {
-					topic = strings.TrimSpace(topic)
-					if len(topic) > 0 {
-						hub.pickOne(topic, raw.Message)
+
+				hub.conn = c
+				hub.conn.SetCloseHandler(hub.handleClose)
+				//resend current pubsub topics
+				for topic, _ := range hub.publishTopics {
+					register := &Register{
+						IsUnregister: false,
+						IsPublisher:  true,
+						Topic:        topic,
 					}
+
+					go hub.SendControl(register)
+				}
+				for topic, _ := range hub.subscribeTopics {
+					register := &Register{
+						IsUnregister: false,
+						IsPublisher:  false,
+						Topic:        topic,
+					}
+
+					go hub.SendControl(register)
 				}
 			}
-		} else {
-			fmt.Println("receive json fail:", err)
+		default:
+			if hub.conn != nil {
+				raw := &Message{}
+				err := hub.conn.ReadJSON(raw)
+
+				if err == nil {
+					msgType, ok := raw.Attributes["type"]
+					if !ok || msgType != "pick_one" {
+						topicString := raw.Topic
+						topics := strings.Split(topicString, ",")
+						for _, topic := range topics {
+							topic = strings.TrimSpace(topic)
+							if len(topic) > 0 {
+								hub.broadcast(topic, raw.Message)
+							}
+						}
+					} else {
+						topicString := raw.Topic
+						topics := strings.Split(topicString, ",")
+						for _, topic := range topics {
+							topic = strings.TrimSpace(topic)
+							if len(topic) > 0 {
+								hub.pickOne(topic, raw.Message)
+							}
+						}
+					}
+				} else {
+					fmt.Println("receive json fail:", err)
+				}
+			}
 		}
 	}
 }
