@@ -26,6 +26,8 @@ type Hub struct {
 	subscribeTopics map[string]int
 	messages        chan *Message
 	control         chan int
+	onTier2Stop     func()
+	hasTier2        bool
 }
 
 func NewWSPubSubHub(url string) (*Hub, error) {
@@ -38,6 +40,8 @@ func NewWSPubSubHub(url string) (*Hub, error) {
 		subscribeTopics: map[string]int{},
 		messages:        make(chan *Message, 100),
 		control:         make(chan int, 1),
+		onTier2Stop:     nil,
+		hasTier2:        false,
 	}
 	hub.control <- CtlReConnect
 
@@ -45,7 +49,9 @@ func NewWSPubSubHub(url string) (*Hub, error) {
 
 	return hub, nil
 }
-
+func (hub *Hub) SetTier2OnStop(fn func()) {
+	hub.onTier2Stop = fn
+}
 func (hub *Hub) getTopic(topic string) *Topic {
 	if topicHub, ok := hub.topics[topic]; ok {
 		return topicHub
@@ -150,6 +156,7 @@ func (hub *Hub) run() {
 
 				if err == nil {
 					msgType, ok := raw.Attributes["type"]
+
 					if !ok || msgType != "pick_one" {
 						topicString := raw.Topic
 						topics := strings.Split(topicString, ",")
@@ -160,6 +167,16 @@ func (hub *Hub) run() {
 							}
 						}
 					} else {
+						tier, hasTier := raw.Attributes["tier"]
+						if hasTier {
+							if tier == "one" {
+								code, hasCode := raw.Attributes["raycode"]
+								if hasCode {
+									//send responsewith code
+									hub.SendResponse(code)
+								}
+							}
+						}
 						topicString := raw.Topic
 						topics := strings.Split(topicString, ",")
 						for _, topic := range topics {
@@ -174,6 +191,9 @@ func (hub *Hub) run() {
 					fmt.Println("receive json fail:", err)
 					hub.control <- CtlReConnect
 					hub.conn = nil
+					if hub.onTier2Stop != nil {
+						hub.onTier2Stop()
+					}
 				}
 			}
 		}
@@ -258,6 +278,18 @@ func (hub *Hub) SendControl(register *Register) error {
 	msg := &Message{
 		Topic:   "control",
 		Message: string(data),
+	}
+	return hub.Send(msg)
+}
+
+func (hub *Hub) SendResponse(code string) error {
+
+	msg := &Message{
+		Topic:   "response",
+		Message: "",
+		Attributes: map[string]string{
+			"raycode": code,
+		},
 	}
 	return hub.Send(msg)
 }
