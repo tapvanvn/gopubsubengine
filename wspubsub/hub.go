@@ -105,6 +105,7 @@ func (hub *Hub) runWriter() {
 }
 func (hub *Hub) handleClose(code int, text string) error {
 
+	fmt.Println("PUBSUB Closed", code, text)
 	hub.conn = nil
 	hub.control <- CtlReConnect
 	return nil
@@ -116,7 +117,7 @@ func (hub *Hub) run() {
 		select {
 		case ctl := <-hub.control:
 			if ctl == CtlReConnect {
-
+				fmt.Println("PUBSUB reconnect")
 				c, _, err := websocket.DefaultDialer.Dial(hub.url, nil)
 				if err != nil {
 
