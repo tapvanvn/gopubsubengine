@@ -16,7 +16,7 @@ type Hub struct {
 	topics map[string]*pubsub.Topic
 }
 
-func NewGPubsub(connectString string) (*Hub, error) {
+func NewGPubSubHub(connectString string) (*Hub, error) {
 	pos := strings.Index(connectString, ":")
 	if pos > -1 {
 		projectID := connectString[:pos]

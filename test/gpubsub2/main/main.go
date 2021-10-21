@@ -13,7 +13,7 @@ func onMessage(message string) {
 }
 
 func main() {
-	hub, err := gpubsub.NewGPubsub("newcontinent-platform:../../credential.json")
+	hub, err := gpubsub.NewGPubSubHub("newcontinent-platform:../../credential.json")
 	if err != nil {
 		log.Fatal(err)
 	}
