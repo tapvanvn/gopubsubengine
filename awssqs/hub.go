@@ -51,7 +51,7 @@ func (hub *Hub) PublishOn(topic string) (gopubsubengine.Publisher, error) {
 		return nil, errors.New("Invalid session")
 	}
 	if queueURL, ok := hub.topicQueueURLs[topic]; ok {
-		return NewPublisher(hub.sess, queueURL), nil
+		return NewPublisher(hub.sess, queueURL, topic), nil
 	}
 	return nil, gopubsubengine.ErrTopicIsNotExisted
 }

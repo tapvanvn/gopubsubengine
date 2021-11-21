@@ -9,11 +9,11 @@ import (
 	"github.com/aws/aws-sdk-go/service/sqs"
 )
 
-func NewPublisher(sess *session.Session, queueURL string) *Publisher {
+func NewPublisher(sess *session.Session, queueURL string, topic string) *Publisher {
 	return &Publisher{
 		client:         sqs.New(sess),
 		queueURL:       queueURL,
-		messageGroupID: "default",
+		messageGroupID: topic,
 	}
 }
 
