@@ -11,11 +11,13 @@ import (
 	"github.com/tapvanvn/goutil"
 )
 
-func NewSubscriber(sess *session.Session, queueURL string) *Subscriber {
+func NewSubscriber(sess *session.Session, topic string, queueURL string) *Subscriber {
+
 	return &Subscriber{
 		client:   sqs.New(sess),
 		queueURL: queueURL,
 		timeout:  1,
+		topic:    topic,
 	}
 }
 
@@ -25,6 +27,7 @@ type Subscriber struct {
 	queueURL  string
 	stop      chan bool
 	timeout   int64
+	topic     string
 }
 
 func (sub *Subscriber) Unsubscribe() {
@@ -39,10 +42,11 @@ func (sub *Subscriber) SetProcessor(processor gopubsubengine.MessageProcessor) {
 
 func (sub *Subscriber) getMessage() {
 
-	fmt.Println("get Message", sub.queueURL)
+	//fmt.Println("get Message", sub.queueURL)
 
 	msgResult, err := sub.client.ReceiveMessage(&sqs.ReceiveMessageInput{
 		AttributeNames: []*string{
+			aws.String(sqs.MessageSystemAttributeNameMessageGroupId),
 			aws.String(sqs.MessageSystemAttributeNameSentTimestamp),
 		},
 		MessageAttributeNames: []*string{
@@ -52,14 +56,13 @@ func (sub *Subscriber) getMessage() {
 		MaxNumberOfMessages: aws.Int64(1),
 		VisibilityTimeout:   &sub.timeout,
 	})
-	fmt.Println("got")
 
 	if err != nil {
 
 		fmt.Println("error receiving message ", err)
 		return
 	}
-	fmt.Println("receive ", len(msgResult.Messages), " messages")
+	//fmt.Println("receive ", len(msgResult.Messages), " messages")
 
 	if len(msgResult.Messages) > 0 {
 
@@ -68,17 +71,27 @@ func (sub *Subscriber) getMessage() {
 		//fmt.Println("Message Handle: "+*msgResult.Messages[0].ReceiptHandle, *msgResult.Messages[0].Body)
 
 		for _, msg := range msgResult.Messages {
-			if sub.processor != nil {
-				sub.processor(*msg.Body)
-			}
-			_, err := sub.client.DeleteMessage(&sqs.DeleteMessageInput{
 
-				QueueUrl:      &sub.queueURL,
-				ReceiptHandle: msg.ReceiptHandle,
-			})
-			if err != nil {
-				fmt.Println("error deleting message ", err)
+			if sub.processor != nil {
+
+				groupID := msg.Attributes[sqs.MessageSystemAttributeNameMessageGroupId]
+				if *groupID == sub.topic {
+
+					sub.processor(*msg.Body)
+
+					_, err := sub.client.DeleteMessage(&sqs.DeleteMessageInput{
+
+						QueueUrl:      &sub.queueURL,
+						ReceiptHandle: msg.ReceiptHandle,
+					})
+					if err != nil {
+						fmt.Println("error deleting message ", err)
+					}
+				} else {
+					// fmt.Println("received on topic", *groupID)
+				}
 			}
+
 		}
 	}
 }

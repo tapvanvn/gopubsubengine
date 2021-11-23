@@ -39,7 +39,7 @@ func (hub *Hub) SubscribeOn(topic string) (gopubsubengine.Subscriber, error) {
 		return nil, errors.New("Invalid session")
 	}
 	if queueURL, ok := hub.topicQueueURLs[topic]; ok {
-		sub := NewSubscriber(hub.sess, queueURL)
+		sub := NewSubscriber(hub.sess, topic, queueURL)
 		sub.start()
 		return sub, nil
 	}

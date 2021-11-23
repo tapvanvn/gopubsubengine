@@ -12,6 +12,10 @@ import (
 	"github.com/tapvanvn/goutil"
 )
 
+func processor(message string) {
+
+}
+
 func main() {
 	accessKey := goutil.MustGetEnv("ACCESS_KEY")
 	accessSecret := goutil.MustGetEnv("ACCESS_SECRET")
@@ -38,7 +42,8 @@ func main() {
 	if err != nil {
 		log.Println("error creating publisher on topic")
 	}
-	_, err = hub.SubscribeOn(topic)
+	sub, err := hub.SubscribeOn(topic)
+	sub.SetProcessor(processor)
 	if err != nil {
 		log.Println("error creating subscribling on topic")
 	}
