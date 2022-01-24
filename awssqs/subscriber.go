@@ -91,12 +91,12 @@ func (sub *Subscriber) getMessage() {
 					// fmt.Println("received on topic", *groupID)
 				}
 			}
-
 		}
 	}
 }
 
 func (sub *Subscriber) start() {
-	sub.stop = goutil.Schedule(sub.getMessage, time.Microsecond*100)
+
+	sub.stop = goutil.Schedule(sub.getMessage, time.Microsecond*20)
 	//TODO : Change the default schedule time
 }
