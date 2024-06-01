@@ -1,0 +1,1 @@
+Invoke-Expression "go run main\main.go"
